@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a192f">
+    <title>Pointeuse - OptiTime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" title="Changer le thème">💻</button>
+    <div class="container">
+        <section id="pointeuseAuth" class="auth-gate">
+            <div class="auth-card">
+                <h2>Connexion utilisateur</h2>
+                <form id="pointeuseLoginForm">
+                    <div class="form-group">
+                        <label for="pointeuseEmail">Email</label>
+                        <input type="email" id="pointeuseEmail" required placeholder="prenom@optitime.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="pointeusePassword">Mot de passe</label>
+                        <input type="password" id="pointeusePassword" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label for="pointeuseTotp">Code Authenticator (TOTP)</label>
+                        <input type="text" id="pointeuseTotp" inputmode="numeric" required placeholder="123456">
+                    </div>
+                    <div id="pointeuseAuthError" class="form-error hidden"></div>
+                    <button type="submit" class="btn-primary">Se connecter</button>
+                    <p class="helper-text">Identifiants fournis par l'administrateur.</p>
+                </form>
+            </div>
+        </section>
+
+        <div id="pointeuseApp" class="app-shell hidden">
+            <header>
+                <div class="header-top">
+                    <div id="clockLogo" class="clock-logo"></div>
+                    <div class="header-text">
+                        <h1>OptiTime</h1>
+                        <p class="subtitle">powered by Enixis</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="planning-banner">
+                <span>Connecté en tant que <strong id="pointeuseUserName">Utilisateur</strong></span>
+                <span class="badge" id="pointeuseUserRole">Compte</span>
+                <button id="pointeuseLogout" class="btn-secondary">🚪 Déconnexion</button>
+            </div>
+
+            <div class="file-selector">
+                <button id="openLogFile" class="btn-primary">📂 Ouvrir/Créer log.csv</button>
+                <button id="openAgendaFile" class="btn-primary">📅 Charger agenda.csv</button>
+                <span id="fileStatus" class="file-status"></span>
+            </div>
+
+        <div class="status-panel">
+            <h2>Statut actuel</h2>
+            <div id="currentStatus" class="status-indicator">Non connecté</div>
+            <div id="lastAction" class="last-action"></div>
+            <div id="notification" class="notification"></div>
+        </div>
+
+        <div class="actions-panel">
+            <h2>Actions</h2>
+            <div class="actions-grid">
+                <button id="btnLogin" class="action-btn" data-action="login">🔐 Login</button>
+                <button id="btnDebutShift" class="action-btn" data-action="debut-shift" disabled>▶️ Début de shift</button>
+                <button id="btnPause" class="action-btn" data-action="pause" disabled>⏸️ Pause</button>
+                <button id="btnReprise" class="action-btn" data-action="reprise" disabled>▶️ Reprise</button>
+                <button id="btnReunion" class="action-btn" data-action="reunion" disabled>👥 Réunion</button>
+                <button id="btnFinShift" class="action-btn" data-action="fin-shift" disabled>⏹️ Fin de shift</button>
+                <button id="btnLogout" class="action-btn" data-action="logout" style="display:none;">🚪 Logout</button>
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <h2>Historique</h2>
+            <div id="historyTable" class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Horodatage</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <tr>
+                            <td colspan="2" class="no-data">Aucune donnée. Ouvrez log.csv pour commencer.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="export-panel">
+            <h2>Export filtré</h2>
+            <div class="export-filters">
+                <div class="filter-group">
+                    <label>
+                        <input type="radio" name="filterType" value="day" checked>
+                        Par jour
+                    </label>
+                    <input type="date" id="filterDay" class="date-input">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="radio" name="filterType" value="week">
+                        Par semaine
+                    </label>
+                    <input type="date" id="filterWeekStart" class="date-input">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="radio" name="filterType" value="month">
+                        Par mois
+                    </label>
+                    <input type="month" id="filterMonth" class="date-input">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="radio" name="filterType" value="period">
+                        Par période
+                    </label>
+                    <input type="date" id="filterPeriodStart" class="date-input" placeholder="Début">
+                    <input type="date" id="filterPeriodEnd" class="date-input" placeholder="Fin">
+                </div>
+                <div class="filter-group">
+                    <label>
+                        <input type="radio" name="filterType" value="action">
+                        Par action
+                    </label>
+                    <select id="filterAction" class="select-input">
+                        <option value="">Toutes les actions</option>
+                        <option value="login">Login</option>
+                        <option value="debut-shift">Début de shift</option>
+                        <option value="pause">Pause</option>
+                        <option value="reprise">Reprise</option>
+                        <option value="reunion">Réunion</option>
+                        <option value="fin-shift">Fin de shift</option>
+                        <option value="logout">Logout</option>
+                    </select>
+                </div>
+            </div>
+            <button id="exportBtn" class="btn-primary">📥 Exporter CSV</button>
+            <div id="exportPreview" class="export-preview"></div>
+        </div>
+
+            <nav class="page-nav">
+                <a href="agenda.html" class="nav-link">← Retour à l'Agenda</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Modal de sélection de type de réunion -->
+    <div id="reunionModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Sélectionner le type de réunion</h2>
+            <div class="reunion-options">
+                <button class="reunion-option" data-type="reporting">📊 Réunion Reporting</button>
+                <button class="reunion-option" data-type="qualite">✅ Réunion Qualité</button>
+                <button class="reunion-option" data-type="developpement">💻 Réunion Développement</button>
+                <button class="reunion-option" data-type="operations">⚙️ Réunion Opérations</button>
+                <button class="reunion-option" data-type="divers">📋 Réunion Divers</button>
+            </div>
+            <button class="btn-secondary" id="cancelReunion">Annuler</button>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="theme.js"></script>
+    <script src="clock.js"></script>
+    <script src="notification-sound.js"></script>
+    <script>
+        // Enregistrer le service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker enregistré:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Erreur d\'enregistrement du Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Variables globales
+        let logFileHandle = null;
+        let agendaFileHandle = null;
+        let logData = [];
+        let agendaData = {};
+        let currentUser = null;
+        let notificationInterval = null;
+        let currentPauseStart = null;
+        let currentPauseDuration = null;
+        let notifiedPauses = new Set(); // Pour éviter les notifications multiples
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Thème
+            if (window.themeManager) {
+                window.themeManager.init();
+            }
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                if (window.themeManager) {
+                    window.themeManager.toggle();
+                }
+            });
+            
+            // Horloge
+            if (window.clockManager) {
+                window.clockManager.init();
+            }
+
+            await window.AuthService.ready();
+            setupPointeuseAuth();
+            
+            document.getElementById('openLogFile').addEventListener('click', openLogFile);
+            document.getElementById('openAgendaFile').addEventListener('click', openAgendaFile);
+            
+            // Boutons d'action
+            document.getElementById('btnLogin').addEventListener('click', () => logAction('login'));
+            document.getElementById('btnDebutShift').addEventListener('click', () => logAction('debut-shift'));
+            document.getElementById('btnPause').addEventListener('click', () => logAction('pause'));
+            document.getElementById('btnReprise').addEventListener('click', () => logAction('reprise'));
+            document.getElementById('btnReunion').addEventListener('click', openReunionModal);
+            document.getElementById('btnFinShift').addEventListener('click', () => logAction('fin-shift'));
+            document.getElementById('btnLogout').addEventListener('click', () => logAction('logout'));
+
+            // Modal réunion
+            document.querySelectorAll('.reunion-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const type = btn.dataset.type;
+                    logAction(`reunion-${type}`);
+                    document.getElementById('reunionModal').style.display = 'none';
+                });
+            });
+
+            document.querySelector('.modal-close').addEventListener('click', () => {
+                document.getElementById('reunionModal').style.display = 'none';
+            });
+
+            document.getElementById('cancelReunion').addEventListener('click', () => {
+                document.getElementById('reunionModal').style.display = 'none';
+            });
+
+            // Export
+            document.getElementById('exportBtn').addEventListener('click', exportFilteredData);
+
+            // Vérifier les notifications toutes les minute
+            setInterval(checkNotifications, 60000);
+            checkNotifications();
+        });
+
+        function setupPointeuseAuth() {
+            document.getElementById('pointeuseLoginForm').addEventListener('submit', onPointeuseLogin);
+            document.getElementById('pointeuseLogout').addEventListener('click', onPointeuseLogout);
+            hydratePointeuseSession();
+        }
+
+        async function onPointeuseLogin(event) {
+            event.preventDefault();
+            setPointeuseError('');
+            const email = document.getElementById('pointeuseEmail').value.trim();
+            const password = document.getElementById('pointeusePassword').value;
+            const totpCode = document.getElementById('pointeuseTotp').value.trim();
+            try {
+                await window.AuthService.login({
+                    email,
+                    password,
+                    totpCode,
+                    allowedRoles: ['user', 'admin'],
+                });
+                event.target.reset();
+                hydratePointeuseSession();
+            } catch (error) {
+                setPointeuseError(error.message || 'Connexion impossible');
+            }
+        }
+
+        function onPointeuseLogout() {
+            window.AuthService.logout();
+            currentUser = null;
+            togglePointeuseScreens(false);
+            resetPointeuseUI();
+        }
+
+        function hydratePointeuseSession() {
+            const sessionUser = window.AuthService.getCurrentUser();
+            if (sessionUser && (sessionUser.role === 'user' || sessionUser.role === 'admin')) {
+                currentUser = sessionUser;
+                document.getElementById('pointeuseUserName').textContent = sessionUser.name;
+                document.getElementById('pointeuseUserRole').textContent = sessionUser.role === 'admin' ? 'Administrateur' : 'Utilisateur';
+                togglePointeuseScreens(true);
+                updateButtons();
+                updateStatus();
+                checkNotifications();
+            } else {
+                currentUser = null;
+                togglePointeuseScreens(false);
+                resetPointeuseUI();
+                updateButtons();
+            }
+        }
+
+        function togglePointeuseScreens(isAuthenticated) {
+            document.getElementById('pointeuseAuth').classList.toggle('hidden', isAuthenticated);
+            document.getElementById('pointeuseApp').classList.toggle('hidden', !isAuthenticated);
+        }
+
+        function setPointeuseError(message) {
+            const errorEl = document.getElementById('pointeuseAuthError');
+            if (!message) {
+                errorEl.classList.add('hidden');
+                errorEl.textContent = '';
+            } else {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function resetPointeuseUI() {
+            document.getElementById('currentStatus').textContent = 'Non connecté';
+            document.getElementById('currentStatus').className = 'status-indicator disconnected';
+            document.getElementById('lastAction').textContent = '';
+            document.getElementById('notification').textContent = '';
+            document.getElementById('notification').classList.remove('notification-warning');
+            document.getElementById('historyBody').innerHTML = '<tr><td colspan="2" class="no-data">Authentifiez-vous pour commencer.</td></tr>';
+        }
+
+        async function openLogFile() {
+            if (!currentUser) {
+                alert('Veuillez d\'abord vous authentifier.');
+                return;
+            }
+            try {
+                const fileHandle = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Fichiers CSV',
+                        accept: { 'text/csv': ['.csv'] }
+                    }],
+                    suggestedName: `log_${slugify(currentUser.name || currentUser.email)}.csv`
+                });
+                
+                logFileHandle = fileHandle[0];
+                await loadLogData();
+                
+                document.getElementById('fileStatus').textContent = `✓ log.csv chargé`;
+                document.getElementById('fileStatus').classList.add('success');
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    try {
+                        logFileHandle = await window.showSaveFilePicker({
+                            types: [{
+                                description: 'Fichiers CSV',
+                                accept: { 'text/csv': ['.csv'] }
+                            }],
+                            suggestedName: `log_${slugify(currentUser?.name || 'optitime')}.csv`
+                        });
+                        
+                        const writable = await logFileHandle.createWritable();
+                        await writable.write('user_id,user_name,horodatage,action\n');
+                        await writable.close();
+                        
+                        logData = [];
+                        displayHistory();
+                        updateButtons();
+                        updateStatus();
+                        checkNotifications();
+                        
+                        document.getElementById('fileStatus').textContent = `✓ log.csv créé`;
+                        document.getElementById('fileStatus').classList.add('success');
+                    } catch (createError) {
+                        alert('Erreur: ' + createError.message);
+                    }
+                }
+            }
+        }
+
+        async function openAgendaFile() {
+            if (!currentUser) {
+                alert('Veuillez vous authentifier pour charger votre planning.');
+                return;
+            }
+            try {
+                const fileHandle = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Fichiers CSV',
+                        accept: { 'text/csv': ['.csv'] }
+                    }],
+                    suggestedName: `agenda_${slugify(currentUser.name || currentUser.email)}.csv`
+                });
+                
+                agendaFileHandle = fileHandle[0];
+                const file = await agendaFileHandle.getFile();
+                const text = await file.text();
+                agendaData = parseAgendaCSV(text);
+                
+                document.getElementById('fileStatus').textContent = `✓ agenda.csv chargé`;
+                document.getElementById('fileStatus').classList.add('success');
+                checkNotifications();
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    alert('Erreur: ' + error.message);
+                }
+            }
+        }
+
+        function parseAgendaCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const data = {};
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const date = parts[0].trim();
+                    const statut = parts[1].trim().toLowerCase();
+                    const dayData = { statut };
+                    
+                    if (statut === 'travail') {
+                        dayData.heureDebut = parts[2]?.trim() || '';
+                        dayData.heureFin = parts[3]?.trim() || '';
+                        // Ancien format (1 pause) - compatibilité
+                        if (parts.length >= 6 && parts[4]?.trim() && !parts[6]?.trim()) {
+                            dayData.pause1Heure = parts[4].trim();
+                            dayData.pause1Duree = parts[5].trim();
+                        }
+                        // Nouveau format (4 pauses)
+                        if (parts.length >= 12) {
+                            dayData.pause1Heure = parts[4]?.trim() || '';
+                            dayData.pause1Duree = parts[5]?.trim() || '';
+                            dayData.pause2Heure = parts[6]?.trim() || '';
+                            dayData.pause2Duree = parts[7]?.trim() || '';
+                            dayData.pause3Heure = parts[8]?.trim() || '';
+                            dayData.pause3Duree = parts[9]?.trim() || '';
+                            dayData.pause4Heure = parts[10]?.trim() || '';
+                            dayData.pause4Duree = parts[11]?.trim() || '';
+                        }
+                    }
+                    
+                    data[date] = dayData;
+                }
+            }
+            
+            return data;
+        }
+
+        async function loadLogData() {
+            if (!logFileHandle) return;
+            
+            const file = await logFileHandle.getFile();
+            const text = await file.text();
+            logData = parseLogCSV(text);
+            displayHistory();
+            updateButtons();
+            updateStatus();
+        }
+
+        function parseLogCSV(csvText) {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length <= 1) return [];
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const hasUserId = headers.includes('user_id');
+            const hasUserName = headers.includes('user_name');
+            const idxTimestamp = headers.indexOf('horodatage');
+            const idxAction = headers.indexOf('action');
+            const idxUserId = headers.indexOf('user_id');
+            const idxUserName = headers.indexOf('user_name');
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const values = line.split(',');
+                const entry = {
+                    userId: hasUserId ? values[idxUserId]?.trim() || 'legacy' : 'legacy',
+                    userName: hasUserName ? values[idxUserName]?.trim() || 'Sans suivi' : 'Sans suivi',
+                    horodatage: idxTimestamp >= 0 ? values[idxTimestamp]?.trim() || '' : '',
+                    action: idxAction >= 0 ? values[idxAction]?.trim() || '' : '',
+                };
+                if (entry.horodatage && entry.action) {
+                    data.push(entry);
+                }
+            }
+            
+            return data;
+        }
+
+        function getUserLogData() {
+            if (!currentUser) return [];
+            return logData.filter(entry => entry.userId === currentUser.id);
+        }
+
+        function getCurrentDayData() {
+            const today = new Date().toISOString().slice(0, 10);
+            return agendaData[today] || null;
+        }
+
+        function getLastAction() {
+            const entries = getUserLogData();
+            if (entries.length === 0) return null;
+            return entries[entries.length - 1];
+        }
+
+        function hasActionToday(action) {
+            const today = new Date().toISOString().slice(0, 10);
+            return getUserLogData().some(entry => 
+                entry.horodatage.startsWith(today) && entry.action === action
+            );
+        }
+
+        function updateButtons() {
+            const actionButtons = ['btnLogin','btnDebutShift','btnPause','btnReprise','btnReunion','btnFinShift','btnLogout'];
+            if (!currentUser) {
+                actionButtons.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (!btn) return;
+                    btn.disabled = true;
+                    if (id === 'btnLogin') btn.style.display = 'block';
+                    if (id === 'btnLogout') btn.style.display = 'none';
+                });
+                return;
+            }
+            const lastAction = getLastAction();
+            const hasLogin = hasActionToday('login');
+            const hasDebutShift = hasActionToday('debut-shift');
+            const hasPause = hasActionToday('pause');
+            const hasReprise = hasActionToday('reprise');
+            const hasFinShift = hasActionToday('fin-shift');
+            const hasLogout = hasActionToday('logout');
+
+            // Login : disponible seulement si pas de login aujourd'hui ou après logout
+            document.getElementById('btnLogin').disabled = hasLogin && !hasLogout;
+            document.getElementById('btnLogin').style.display = (hasLogin && !hasLogout) ? 'none' : 'block';
+
+            // Début shift : disponible seulement après login
+            document.getElementById('btnDebutShift').disabled = !hasLogin || hasDebutShift || hasLogout;
+
+            // Réunion : disponible après début shift
+            document.getElementById('btnReunion').disabled = !hasDebutShift || hasFinShift || hasLogout;
+
+            // Pause, Reprise, Fin shift : gérés par checkNotifications
+            checkNotifications();
+        }
+
+        function checkNotifications() {
+            if (!currentUser) {
+                document.getElementById('btnPause').disabled = true;
+                document.getElementById('btnReprise').disabled = true;
+                document.getElementById('btnFinShift').disabled = true;
+                return;
+            }
+            const dayData = getCurrentDayData();
+            const now = new Date();
+            const today = now.toISOString().slice(0, 10);
+            const currentTime = now.toTimeString().slice(0, 5); // HH:MM
+
+            // Réinitialiser la notification
+            const notificationDiv = document.getElementById('notification');
+            notificationDiv.classList.remove('notification-warning');
+            notificationDiv.textContent = '';
+
+            if (!dayData || dayData.statut !== 'travail' || !hasActionToday('debut-shift')) {
+                document.getElementById('btnPause').disabled = true;
+                document.getElementById('btnReprise').disabled = true;
+                document.getElementById('btnFinShift').disabled = true;
+                return;
+            }
+
+            const hasPause = hasActionToday('pause');
+            const hasReprise = hasActionToday('reprise');
+            const hasFinShift = hasActionToday('fin-shift');
+            const hasLogout = hasActionToday('logout');
+
+            // Gestion des 4 pauses
+            const pauses = [
+                { heure: dayData.pause1Heure, duree: dayData.pause1Duree, name: 'Pausette' },
+                { heure: dayData.pause2Heure, duree: dayData.pause2Duree, name: 'Déjeuner' },
+                { heure: dayData.pause3Heure, duree: dayData.pause3Duree, name: 'Autre pause' },
+                { heure: dayData.pause4Heure, duree: dayData.pause4Duree, name: 'Dernière pause' }
+            ];
+            
+            let nextPause = null;
+            let pauseAvailable = false;
+            
+            // Trouver la prochaine pause disponible
+            for (let i = 0; i < pauses.length; i++) {
+                const pause = pauses[i];
+                if (pause.heure && pause.duree) {
+                    const pauseTime = pause.heure;
+                    const pauseKey = `${today}-pause${i + 1}-${pauseTime}`;
+                    
+                    // Vérifier si on approche de cette pause (5 minutes avant)
+                    if (isTimeApproaching(pauseTime, 5)) {
+                        // Jouer la notification mélodieuse (une seule fois par pause)
+                        if (!notifiedPauses.has(pauseKey) && window.notificationSound) {
+                            window.notificationSound.play();
+                            notifiedPauses.add(pauseKey);
+                        }
+                        
+                        pauseAvailable = true;
+                        nextPause = pause;
+                        document.getElementById('btnPause').disabled = false;
+                        notificationDiv.textContent = `⏰ ${pause.name} dans 5 minutes !`;
+                        notificationDiv.classList.add('notification-warning');
+                        break;
+                    } else if (isTimeAfter(pauseTime) && !nextPause) {
+                        // Si la pause est passée mais pas encore prise
+                        nextPause = pause;
+                        pauseAvailable = true;
+                    }
+                }
+            }
+            
+            if (!pauseAvailable && !hasPause) {
+                document.getElementById('btnPause').disabled = true;
+            } else if (pauseAvailable && !hasPause && !nextPause) {
+                document.getElementById('btnPause').disabled = false;
+                if (!notificationDiv.textContent) {
+                    notificationDiv.textContent = '⏸️ Pause disponible';
+                }
+            }
+            
+            document.getElementById('btnReprise').disabled = true;
+            
+            // Gestion de la reprise si pause en cours
+            if (hasPause && !hasReprise) {
+                const pauseEntries = getUserLogData().filter(entry => 
+                    entry.horodatage.startsWith(today) && entry.action === 'pause'
+                );
+                
+                if (pauseEntries.length > 0) {
+                    const pauseEntry = pauseEntries[pauseEntries.length - 1];
+                    const pauseStartDateTime = new Date(pauseEntry.horodatage);
+                    
+                    // Trouver la durée de la pause correspondante
+                    let pauseDuration = 15; // Par défaut
+                    for (const pause of pauses) {
+                        if (pause.heure) {
+                            const pauseTime = new Date();
+                            const [hours, mins] = pause.heure.split(':').map(Number);
+                            pauseTime.setHours(hours, mins, 0, 0);
+                            
+                            // Vérifier si cette pause correspond (à 1 minute près)
+                            const diff = Math.abs(pauseTime - pauseStartDateTime);
+                            if (diff < 60000) {
+                                pauseDuration = parseInt(pause.duree) || 15;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    const pauseEndDateTime = new Date(pauseStartDateTime.getTime() + pauseDuration * 60000);
+                    const now = new Date();
+                    
+                    document.getElementById('btnPause').disabled = true;
+                    
+                    if (now >= pauseEndDateTime) {
+                        document.getElementById('btnReprise').disabled = false;
+                        notificationDiv.textContent = '▶️ Reprise disponible - Pause terminée';
+                    } else {
+                        document.getElementById('btnReprise').disabled = true;
+                        const remaining = getTimeRemainingFromDate(pauseEndDateTime);
+                        notificationDiv.textContent = `⏸️ Pause en cours (${remaining} restantes)`;
+                    }
+                }
+            } else if (hasReprise) {
+                document.getElementById('btnPause').disabled = true;
+                document.getElementById('btnReprise').disabled = true;
+            }
+            
+            // Réinitialiser les notifications au changement de jour
+            const lastNotificationDate = localStorage.getItem('optitime-last-notification-date');
+            if (lastNotificationDate !== today) {
+                notifiedPauses.clear();
+                localStorage.setItem('optitime-last-notification-date', today);
+            }
+
+            // Gestion de la fin de shift
+            if (dayData.heureFin && !hasLogout) {
+                if (!hasFinShift) {
+                    if (isTimeApproaching(dayData.heureFin, 5)) {
+                        document.getElementById('btnFinShift').disabled = false;
+                        notificationDiv.textContent = '⏹️ Fin de shift dans 5 minutes !';
+                        notificationDiv.classList.add('notification-warning');
+                    } else if (isTimeAfter(dayData.heureFin)) {
+                        document.getElementById('btnFinShift').disabled = false;
+                        if (!notificationDiv.textContent) {
+                            notificationDiv.textContent = '⏹️ Fin de shift disponible';
+                        }
+                    } else {
+                        document.getElementById('btnFinShift').disabled = true;
+                    }
+                } else {
+                    document.getElementById('btnFinShift').disabled = true;
+                    document.getElementById('btnLogout').style.display = 'block';
+                    if (!notificationDiv.textContent) {
+                        notificationDiv.textContent = '🚪 Cliquez sur Logout pour terminer la journée';
+                    }
+                }
+            }
+        }
+
+        function addMinutes(timeStr, minutes) {
+            const [hours, mins] = timeStr.split(':').map(Number);
+            const totalMinutes = hours * 60 + mins + minutes;
+            const newHours = Math.floor(totalMinutes / 60);
+            const newMins = totalMinutes % 60;
+            return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+        }
+
+        function isTimeApproaching(targetTime, minutesBefore) {
+            const now = new Date();
+            const target = new Date(now);
+            const [hours, mins] = targetTime.split(':').map(Number);
+            target.setHours(hours, mins, 0, 0);
+            
+            const diff = target - now;
+            const diffMinutes = diff / 60000;
+            return diffMinutes > 0 && diffMinutes <= minutesBefore;
+        }
+
+        function isTimeAfter(targetTime) {
+            const now = new Date();
+            const [hours, mins] = targetTime.split(':').map(Number);
+            const target = new Date(now);
+            target.setHours(hours, mins, 0, 0);
+            return now >= target;
+        }
+
+        function compareTime(time1, time2) {
+            const [h1, m1] = time1.split(':').map(Number);
+            const [h2, m2] = time2.split(':').map(Number);
+            const total1 = h1 * 60 + m1;
+            const total2 = h2 * 60 + m2;
+            return total1 - total2;
+        }
+
+        function getTimeRemaining(endTime) {
+            const now = new Date();
+            const [hours, mins] = endTime.split(':').map(Number);
+            const end = new Date(now);
+            end.setHours(hours, mins, 0, 0);
+            
+            const diff = end - now;
+            if (diff <= 0) return '0 min';
+            
+            const minutes = Math.floor(diff / 60000);
+            return `${minutes} min`;
+        }
+
+        function getTimeRemainingFromDate(endDate) {
+            const now = new Date();
+            const diff = endDate - now;
+            if (diff <= 0) return '0 min';
+            
+            const minutes = Math.floor(diff / 60000);
+            return `${minutes} min`;
+        }
+
+        function openReunionModal() {
+            document.getElementById('reunionModal').style.display = 'block';
+        }
+
+        async function logAction(action) {
+            if (!logFileHandle) {
+                alert('Veuillez d\'abord ouvrir ou créer log.csv');
+                return;
+            }
+            if (!currentUser) {
+                alert('Veuillez vous authentifier.');
+                return;
+            }
+
+            // Vérifications spécifiques
+            if (action === 'debut-shift' && !hasActionToday('login')) {
+                alert('Vous devez d\'abord vous connecter (Login)');
+                return;
+            }
+
+            if (action === 'pause') {
+                const dayData = getCurrentDayData();
+                if (!dayData || dayData.statut !== 'travail' || !dayData.pauseDebut) {
+                    alert('Aucune pause programmée pour aujourd\'hui');
+                    return;
+                }
+                currentPauseStart = new Date();
+                currentPauseDuration = parseInt(dayData.pauseDuree);
+            }
+
+            if (action === 'reprise') {
+                if (!hasActionToday('pause')) {
+                    alert('Vous devez d\'abord prendre une pause');
+                    return;
+                }
+            }
+
+            if (action === 'fin-shift') {
+                if (!hasActionToday('debut-shift')) {
+                    alert('Vous devez d\'abord commencer votre shift');
+                    return;
+                }
+            }
+
+            if (action === 'logout') {
+                if (!hasActionToday('fin-shift')) {
+                    alert('Vous devez d\'abord terminer votre shift');
+                    return;
+                }
+            }
+
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+            
+            logData.push({
+                userId: currentUser.id,
+                userName: currentUser.name,
+                horodatage: timestamp,
+                action: action
+            });
+
+            await writeLogFile();
+            displayHistory();
+            updateButtons();
+            updateStatus();
+            checkNotifications();
+        }
+
+        async function writeLogFile() {
+            if (!logFileHandle) return;
+            
+            let csvContent = 'user_id,user_name,horodatage,action\n';
+            logData.forEach(entry => {
+                csvContent += `${entry.userId || ''},${entry.userName || ''},${entry.horodatage},${entry.action}\n`;
+            });
+
+            const writable = await logFileHandle.createWritable();
+            await writable.write(csvContent);
+            await writable.close();
+        }
+
+        function displayHistory() {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+
+            const userEntries = getUserLogData();
+            if (userEntries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="no-data">Aucune donnée pour ce compte</td></tr>';
+                return;
+            }
+
+            const sortedData = [...userEntries].reverse();
+            
+            sortedData.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.horodatage}</td>
+                    <td><span class="action-badge ${entry.action}">${formatAction(entry.action)}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function formatAction(action) {
+            const actions = {
+                'login': '🔐 Login',
+                'debut-shift': '▶️ Début de shift',
+                'pause': '⏸️ Pause',
+                'reprise': '▶️ Reprise',
+                'reunion-reporting': '👥 Réunion Reporting',
+                'reunion-qualite': '👥 Réunion Qualité',
+                'reunion-developpement': '👥 Réunion Développement',
+                'reunion-operations': '👥 Réunion Opérations',
+                'reunion-divers': '👥 Réunion Divers',
+                'fin-shift': '⏹️ Fin de shift',
+                'logout': '🚪 Logout'
+            };
+            return actions[action] || action;
+        }
+
+        function updateStatus() {
+            const statusDiv = document.getElementById('currentStatus');
+            const lastActionDiv = document.getElementById('lastAction');
+            
+            if (!currentUser) {
+                statusDiv.textContent = 'Non connecté';
+                statusDiv.className = 'status-indicator disconnected';
+                lastActionDiv.textContent = '';
+                return;
+            }
+
+            const userEntries = getUserLogData();
+            if (userEntries.length === 0) {
+                statusDiv.textContent = 'Non connecté';
+                statusDiv.className = 'status-indicator disconnected';
+                lastActionDiv.textContent = '';
+                return;
+            }
+
+            const lastEntry = userEntries[userEntries.length - 1];
+            lastActionDiv.textContent = `Dernière action: ${formatAction(lastEntry.action)} à ${lastEntry.horodatage}`;
+
+            const statusMap = {
+                'login': { text: 'Connecté', class: 'connected' },
+                'debut-shift': { text: 'En shift', class: 'in-shift' },
+                'pause': { text: 'En pause', class: 'paused' },
+                'reprise': { text: 'En shift', class: 'in-shift' },
+                'reunion-reporting': { text: 'En réunion - Reporting', class: 'in-meeting' },
+                'reunion-qualite': { text: 'En réunion - Qualité', class: 'in-meeting' },
+                'reunion-developpement': { text: 'En réunion - Développement', class: 'in-meeting' },
+                'reunion-operations': { text: 'En réunion - Opérations', class: 'in-meeting' },
+                'reunion-divers': { text: 'En réunion - Divers', class: 'in-meeting' },
+                'fin-shift': { text: 'Shift terminé', class: 'shift-ended' },
+                'logout': { text: 'Déconnecté', class: 'disconnected' }
+            };
+
+            const status = statusMap[lastEntry.action] || { text: 'Inconnu', class: 'unknown' };
+            statusDiv.textContent = status.text;
+            statusDiv.className = `status-indicator ${status.class}`;
+        }
+
+        function exportFilteredData() {
+            const userEntries = getUserLogData();
+            if (userEntries.length === 0) {
+                alert('Aucune donnée à exporter');
+                return;
+            }
+
+            const filterType = document.querySelector('input[name="filterType"]:checked').value;
+            let filteredData = [];
+
+            switch (filterType) {
+                case 'day':
+                    const day = document.getElementById('filterDay').value;
+                    if (!day) {
+                        alert('Veuillez sélectionner une date');
+                        return;
+                    }
+                    filteredData = userEntries.filter(entry => entry.horodatage.startsWith(day));
+                    break;
+
+                case 'week':
+                    const weekStart = document.getElementById('filterWeekStart').value;
+                    if (!weekStart) {
+                        alert('Veuillez sélectionner une date de début de semaine');
+                        return;
+                    }
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekEnd.getDate() + 6);
+                    const weekEndStr = weekEnd.toISOString().slice(0, 10);
+                    filteredData = userEntries.filter(entry => {
+                        const entryDate = entry.horodatage.slice(0, 10);
+                        return entryDate >= weekStart && entryDate <= weekEndStr;
+                    });
+                    break;
+
+                case 'month':
+                    const month = document.getElementById('filterMonth').value;
+                    if (!month) {
+                        alert('Veuillez sélectionner un mois');
+                        return;
+                    }
+                    filteredData = userEntries.filter(entry => entry.horodatage.startsWith(month));
+                    break;
+
+                case 'period':
+                    const periodStart = document.getElementById('filterPeriodStart').value;
+                    const periodEnd = document.getElementById('filterPeriodEnd').value;
+                    if (!periodStart || !periodEnd) {
+                        alert('Veuillez sélectionner une période complète');
+                        return;
+                    }
+                    filteredData = userEntries.filter(entry => {
+                        const entryDate = entry.horodatage.slice(0, 10);
+                        return entryDate >= periodStart && entryDate <= periodEnd;
+                    });
+                    break;
+
+                case 'action':
+                    const action = document.getElementById('filterAction').value;
+                    if (!action) {
+                        filteredData = userEntries;
+                    } else {
+                        filteredData = userEntries.filter(entry => entry.action === action || entry.action.startsWith(action + '-'));
+                    }
+                    break;
+            }
+
+            if (filteredData.length === 0) {
+                alert('Aucune donnée ne correspond aux filtres sélectionnés');
+                return;
+            }
+
+            let csvContent = 'horodatage,action\n';
+            filteredData.forEach(entry => {
+                csvContent += `${entry.horodatage},${entry.action}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            const filename = `export_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            document.getElementById('exportPreview').innerHTML = `
+                <p><strong>${filteredData.length}</strong> entrée(s) exportée(s)</p>
+                <small>Fichier: ${filename}</small>
+            `;
+        }
+
+        function slugify(text) {
+            return (text || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '') || 'optitime';
+        }
+    </script>
+</body>
+</html>

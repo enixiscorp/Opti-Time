@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a192f">
+    <title>OptiTime - Accueil</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .home-container {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .home-logo {
+            margin-bottom: 40px;
+        }
+        .home-title {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .home-subtitle {
+            font-size: 1.2em;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+        }
+        .home-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .home-btn {
+            padding: 30px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .home-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px var(--shadow);
+            border-color: var(--cyan);
+        }
+        .home-btn-icon {
+            font-size: 3em;
+        }
+
+        .home-btn.admin-link {
+            animation: adminPulse 1.8s ease-in-out infinite;
+            position: relative;
+        }
+
+        @keyframes adminPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(100, 255, 218, 0.35);
+            }
+            50% {
+                box-shadow: 0 0 25px 5px rgba(255, 215, 0, 0.35);
+            }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .home-container {
+                padding: 30px 15px;
+            }
+            .home-logo {
+                margin-bottom: 20px;
+            }
+            .home-title {
+                font-size: 2em;
+                margin-bottom: 8px;
+            }
+            .home-subtitle {
+                font-size: 0.9em;
+                margin-bottom: 30px;
+            }
+            .home-buttons {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                max-width: 100%;
+            }
+            .home-btn {
+                padding: 25px 20px;
+                font-size: 1.1em;
+                min-height: 80px;
+            }
+            .home-btn-icon {
+                font-size: 2.5em;
+            }
+            .clock-logo {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .home-container {
+                padding: 20px 10px;
+            }
+            .home-title {
+                font-size: 1.8em;
+            }
+            .home-subtitle {
+                font-size: 0.85em;
+                margin-bottom: 25px;
+            }
+            .home-btn {
+                padding: 20px 15px;
+                font-size: 1em;
+                min-height: 70px;
+            }
+            .home-btn-icon {
+                font-size: 2em;
+            }
+            .clock-logo {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" title="Changer le thème">💻</button>
+    <div class="container home-container">
+        <div class="home-logo">
+            <div id="clockLogo" class="clock-logo" style="margin: 0 auto;"></div>
+        </div>
+        <h1 class="home-title">OptiTime</h1>
+        <p class="home-subtitle">powered by Enixis</p>
+        <div class="home-buttons">
+            <a href="agenda.html" class="home-btn">
+                <span class="home-btn-icon">📅</span>
+                <span>Agenda</span>
+            </a>
+            <a href="pointeuse.html" class="home-btn">
+                <span class="home-btn-icon">⏰</span>
+                <span>Pointeuse</span>
+            </a>
+            <a href="admin.html" class="home-btn admin-link">
+                <span class="home-btn-icon">🛡️</span>
+                <span>Espace Admin</span>
+            </a>
+        </div>
+    </div>
+    <script src="auth.js"></script>
+    <script src="theme.js"></script>
+    <script src="clock.js"></script>
+    <script>
+        // Enregistrer le service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker enregistré:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Erreur d\'enregistrement du Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Initialiser le thème
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.themeManager) {
+                window.themeManager.init();
+            }
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                if (window.themeManager) {
+                    window.themeManager.toggle();
+                }
+            });
+            
+            if (window.clockManager) {
+                window.clockManager.init();
+            }
+        });
+    </script>
+</body>
+</html>
+

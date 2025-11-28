@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a192f">
+    <title>Agenda - OptiTime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" title="Changer le thème">💻</button>
+    <div class="container">
+        <section id="agendaAuth" class="auth-gate">
+            <div class="auth-card">
+                <h2>Connexion utilisateur</h2>
+                <form id="agendaLoginForm">
+                    <div class="form-group">
+                        <label for="agendaEmail">Email</label>
+                        <input type="email" id="agendaEmail" required placeholder="prenom@optitime.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="agendaPassword">Mot de passe</label>
+                        <input type="password" id="agendaPassword" required placeholder="••••••••">
+                    </div>
+                    <div class="form-group">
+                        <label for="agendaTotp">Code Authenticator (TOTP)</label>
+                        <input type="text" id="agendaTotp" inputmode="numeric" required placeholder="123456">
+                    </div>
+                    <div id="agendaAuthError" class="form-error hidden"></div>
+                    <button type="submit" class="btn-primary">Se connecter</button>
+                    <p class="helper-text">Vos accès sont fournis par l'administrateur OptiTime.</p>
+                </form>
+            </div>
+        </section>
+
+        <div id="agendaApp" class="app-shell hidden">
+            <header>
+                <div class="header-top">
+                    <div id="clockLogo" class="clock-logo"></div>
+                    <div class="header-text">
+                        <h1>OptiTime</h1>
+                        <p class="subtitle">powered by Enixis</p>
+                    </div>
+                </div>
+                <nav class="month-nav">
+                    <button id="prevMonth" class="nav-btn">← Mois précédent</button>
+                    <h2 id="currentMonth"></h2>
+                    <button id="nextMonth" class="nav-btn">Mois suivant →</button>
+                </nav>
+            </header>
+
+            <div class="planning-banner">
+                <span>Connecté en tant que <strong id="agendaUserName">Utilisateur</strong></span>
+                <button id="agendaLogout" class="btn-secondary">🚪 Déconnexion</button>
+            </div>
+
+            <div class="file-selector">
+                <button id="openAgendaFile" class="btn-primary">📂 Ouvrir agenda.csv</button>
+                <span id="fileStatus" class="file-status"></span>
+            </div>
+
+        <div id="calendar" class="calendar"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="legend-color work"></span>
+                <span>Travail</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color rest"></span>
+                <span>Repos</span>
+            </div>
+        </div>
+
+            <nav class="page-nav">
+                <a href="pointeuse.html" class="nav-link">→ Aller à la Pointeuse</a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Modal d'édition de jour -->
+    <div id="dayModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Planifier le jour</h2>
+            <form id="dayForm">
+                <div class="form-group">
+                    <label>Date:</label>
+                    <input type="date" id="modalDate" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Statut:</label>
+                    <select id="modalStatut" required>
+                        <option value="repos">Repos</option>
+                        <option value="travail">Travail</option>
+                    </select>
+                </div>
+                <div id="workFields" class="work-fields">
+                    <div class="form-group">
+                        <label>Heure de début:</label>
+                        <input type="time" id="modalHeureDebut">
+                    </div>
+                    <div class="form-group">
+                        <label>Heure de fin:</label>
+                        <input type="time" id="modalHeureFin">
+                    </div>
+                    
+                    <div class="pauses-section">
+                        <h3>Pauses</h3>
+                        <div class="pause-item">
+                            <label>1. Pausette - Heure:</label>
+                            <input type="time" id="modalPause1Heure">
+                            <label>Durée:</label>
+                            <select id="modalPause1Duree" class="pause-duration">
+                                <option value="">Aucune</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 heure</option>
+                            </select>
+                        </div>
+                        <div class="pause-item">
+                            <label>2. Déjeuner - Heure:</label>
+                            <input type="time" id="modalPause2Heure">
+                            <label>Durée:</label>
+                            <select id="modalPause2Duree" class="pause-duration">
+                                <option value="">Aucune</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 heure</option>
+                            </select>
+                        </div>
+                        <div class="pause-item">
+                            <label>3. Autre pause - Heure:</label>
+                            <input type="time" id="modalPause3Heure">
+                            <label>Durée:</label>
+                            <select id="modalPause3Duree" class="pause-duration">
+                                <option value="">Aucune</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 heure</option>
+                            </select>
+                        </div>
+                        <div class="pause-item">
+                            <label>4. Dernière pause - Heure:</label>
+                            <input type="time" id="modalPause4Heure">
+                            <label>Durée:</label>
+                            <select id="modalPause4Duree" class="pause-duration">
+                                <option value="">Aucune</option>
+                                <option value="15">15 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="60">1 heure</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                    <button type="button" class="btn-secondary" id="cancelBtn">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="theme.js"></script>
+    <script src="clock.js"></script>
+    <script>
+        // Variables globales pour l'agenda
+        let currentDate = new Date();
+        let agendaData = {};
+        let agendaFileHandle = null;
+        let currentUser = null;
+
+        // Enregistrer le service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker enregistré:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Erreur d\'enregistrement du Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Thème
+            if (window.themeManager) {
+                window.themeManager.init();
+            }
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                if (window.themeManager) {
+                    window.themeManager.toggle();
+                }
+            });
+            
+            // Horloge
+            if (window.clockManager) {
+                window.clockManager.init();
+            }
+
+            await window.AuthService.ready();
+            setupAgendaAuth();
+            
+            document.getElementById('openAgendaFile').addEventListener('click', openAgendaFile);
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                if (currentUser) {
+                    displayCalendar();
+                }
+            });
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                if (currentUser) {
+                    displayCalendar();
+                }
+            });
+        });
+
+        function setupAgendaAuth() {
+            document.getElementById('agendaLoginForm').addEventListener('submit', onAgendaLogin);
+            document.getElementById('agendaLogout').addEventListener('click', onAgendaLogout);
+            hydrateAgendaSession();
+        }
+
+        async function onAgendaLogin(event) {
+            event.preventDefault();
+            setAgendaError('');
+            const email = document.getElementById('agendaEmail').value.trim();
+            const password = document.getElementById('agendaPassword').value;
+            const totpCode = document.getElementById('agendaTotp').value.trim();
+            try {
+                await window.AuthService.login({
+                    email,
+                    password,
+                    totpCode,
+                    allowedRoles: ['user', 'admin'],
+                });
+                event.target.reset();
+                hydrateAgendaSession();
+            } catch (error) {
+                setAgendaError(error.message || 'Connexion impossible');
+            }
+        }
+
+        function onAgendaLogout() {
+            window.AuthService.logout();
+            currentUser = null;
+            toggleAgendaScreens(false);
+        }
+
+        function hydrateAgendaSession() {
+            const sessionUser = window.AuthService.getCurrentUser();
+            if (sessionUser && (sessionUser.role === 'user' || sessionUser.role === 'admin')) {
+                currentUser = sessionUser;
+                document.getElementById('agendaUserName').textContent = sessionUser.name;
+                toggleAgendaScreens(true);
+                displayCalendar();
+            } else {
+                currentUser = null;
+                toggleAgendaScreens(false);
+            }
+        }
+
+        function toggleAgendaScreens(isAuthenticated) {
+            document.getElementById('agendaAuth').classList.toggle('hidden', isAuthenticated);
+            document.getElementById('agendaApp').classList.toggle('hidden', !isAuthenticated);
+        }
+
+        function setAgendaError(message) {
+            const errorEl = document.getElementById('agendaAuthError');
+            if (!message) {
+                errorEl.classList.add('hidden');
+                errorEl.textContent = '';
+            } else {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        async function openAgendaFile() {
+            if (!currentUser) {
+                alert('Veuillez d\'abord vous authentifier.');
+                return;
+            }
+            try {
+                const fileHandle = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Fichiers CSV',
+                        accept: { 'text/csv': ['.csv'] }
+                    }],
+                    suggestedName: `agenda_${slugify(currentUser.name || currentUser.email)}.csv`
+                });
+                
+                agendaFileHandle = fileHandle[0];
+                const file = await agendaFileHandle.getFile();
+                const text = await file.text();
+                agendaData = parseAgendaCSV(text);
+                
+                document.getElementById('fileStatus').textContent = `✓ Fichier chargé: ${file.name}`;
+                document.getElementById('fileStatus').classList.add('success');
+                displayCalendar();
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+                }
+            }
+        }
+
+        function parseAgendaCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const data = {};
+            
+            // Ignorer la première ligne (en-tête)
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const date = parts[0].trim();
+                    const statut = parts[1].trim().toLowerCase();
+                    const dayData = { statut };
+                    
+                    if (statut === 'travail') {
+                        dayData.heureDebut = parts[2]?.trim() || '';
+                        dayData.heureFin = parts[3]?.trim() || '';
+                        // Ancien format (1 pause)
+                        if (parts.length >= 6 && parts[4]?.trim()) {
+                            dayData.pause1Heure = parts[4].trim();
+                            dayData.pause1Duree = parts[5].trim();
+                        }
+                        // Nouveau format (4 pauses)
+                        if (parts.length >= 14) {
+                            dayData.pause1Heure = parts[4]?.trim() || '';
+                            dayData.pause1Duree = parts[5]?.trim() || '';
+                            dayData.pause2Heure = parts[6]?.trim() || '';
+                            dayData.pause2Duree = parts[7]?.trim() || '';
+                            dayData.pause3Heure = parts[8]?.trim() || '';
+                            dayData.pause3Duree = parts[9]?.trim() || '';
+                            dayData.pause4Heure = parts[10]?.trim() || '';
+                            dayData.pause4Duree = parts[11]?.trim() || '';
+                        }
+                    }
+                    
+                    data[date] = dayData;
+                }
+            }
+            
+            return data;
+        }
+
+        function agendaDataToCSV() {
+            let csv = 'date,statut,heure_debut,heure_fin,pause1_heure,pause1_duree,pause2_heure,pause2_duree,pause3_heure,pause3_duree,pause4_heure,pause4_duree\n';
+            const sortedDates = Object.keys(agendaData).sort();
+            
+            sortedDates.forEach(date => {
+                const dayData = agendaData[date];
+                if (dayData.statut === 'travail') {
+                    csv += `${date},${dayData.statut},${dayData.heureDebut || ''},${dayData.heureFin || ''},${dayData.pause1Heure || ''},${dayData.pause1Duree || ''},${dayData.pause2Heure || ''},${dayData.pause2Duree || ''},${dayData.pause3Heure || ''},${dayData.pause3Duree || ''},${dayData.pause4Heure || ''},${dayData.pause4Duree || ''}\n`;
+                } else {
+                    csv += `${date},${dayData.statut},,,,,,,,,,\n`;
+                }
+            });
+            
+            return csv;
+        }
+
+        async function saveAgendaFile() {
+            if (!agendaFileHandle) return;
+            
+            const csvContent = agendaDataToCSV();
+            const writable = await agendaFileHandle.createWritable();
+            await writable.write(csvContent);
+            await writable.close();
+        }
+
+        function openDayEditor(dateStr) {
+            if (!currentUser) return;
+            const modal = document.getElementById('dayModal');
+            const form = document.getElementById('dayForm');
+            const dayData = agendaData[dateStr] || { statut: 'repos' };
+            
+            document.getElementById('modalDate').value = dateStr;
+            document.getElementById('modalStatut').value = dayData.statut;
+            document.getElementById('modalHeureDebut').value = dayData.heureDebut || '';
+            document.getElementById('modalHeureFin').value = dayData.heureFin || '';
+            
+            // Pauses
+            document.getElementById('modalPause1Heure').value = dayData.pause1Heure || '';
+            document.getElementById('modalPause1Duree').value = dayData.pause1Duree || '';
+            document.getElementById('modalPause2Heure').value = dayData.pause2Heure || '';
+            document.getElementById('modalPause2Duree').value = dayData.pause2Duree || '';
+            document.getElementById('modalPause3Heure').value = dayData.pause3Heure || '';
+            document.getElementById('modalPause3Duree').value = dayData.pause3Duree || '';
+            document.getElementById('modalPause4Heure').value = dayData.pause4Heure || '';
+            document.getElementById('modalPause4Duree').value = dayData.pause4Duree || '';
+            
+            toggleWorkFields();
+            modal.style.display = 'block';
+            
+            // Changer le statut
+            document.getElementById('modalStatut').addEventListener('change', toggleWorkFields);
+        }
+
+        function toggleWorkFields() {
+            const statut = document.getElementById('modalStatut').value;
+            const workFields = document.getElementById('workFields');
+            workFields.style.display = statut === 'travail' ? 'block' : 'none';
+        }
+
+        // Fermer le modal
+        document.querySelector('.modal-close').addEventListener('click', () => {
+            document.getElementById('dayModal').style.display = 'none';
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            document.getElementById('dayModal').style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('dayModal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Soumettre le formulaire
+        document.getElementById('dayForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const date = document.getElementById('modalDate').value;
+            const statut = document.getElementById('modalStatut').value;
+            const dayData = { statut };
+            
+            if (statut === 'travail') {
+                dayData.heureDebut = document.getElementById('modalHeureDebut').value;
+                dayData.heureFin = document.getElementById('modalHeureFin').value;
+                dayData.pause1Heure = document.getElementById('modalPause1Heure').value;
+                dayData.pause1Duree = document.getElementById('modalPause1Duree').value;
+                dayData.pause2Heure = document.getElementById('modalPause2Heure').value;
+                dayData.pause2Duree = document.getElementById('modalPause2Duree').value;
+                dayData.pause3Heure = document.getElementById('modalPause3Heure').value;
+                dayData.pause3Duree = document.getElementById('modalPause3Duree').value;
+                dayData.pause4Heure = document.getElementById('modalPause4Heure').value;
+                dayData.pause4Duree = document.getElementById('modalPause4Duree').value;
+            }
+            
+            agendaData[date] = dayData;
+            await saveAgendaFile();
+            displayCalendar();
+            document.getElementById('dayModal').style.display = 'none';
+        });
+
+        function displayCalendar() {
+            if (!currentUser) return;
+            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                              'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Ajuster pour que lundi = 0
+            const adjustedStart = (startingDayOfWeek + 6) % 7;
+            
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            // En-têtes des jours
+            const dayHeaders = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const headerRow = document.createElement('div');
+            headerRow.className = 'calendar-header';
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = day;
+                headerRow.appendChild(header);
+            });
+            calendar.appendChild(headerRow);
+            
+            // Jours du mois
+            let currentDay = 1;
+            for (let week = 0; week < 6; week++) {
+                const weekRow = document.createElement('div');
+                weekRow.className = 'calendar-week';
+                
+                for (let day = 0; day < 7; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell';
+                    
+                    if (week === 0 && day < adjustedStart) {
+                        // Cellule vide avant le premier jour
+                        dayCell.classList.add('empty');
+                    } else if (currentDay <= daysInMonth) {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+                        dayCell.textContent = currentDay;
+                        dayCell.dataset.date = dateStr;
+                        dayCell.addEventListener('click', () => openDayEditor(dateStr));
+                        
+                        // Appliquer le statut depuis agendaData
+                        const dayData = agendaData[dateStr];
+                        if (dayData) {
+                            if (dayData.statut === 'travail') {
+                                dayCell.classList.add('work');
+                            } else if (dayData.statut === 'repos') {
+                                dayCell.classList.add('rest');
+                            }
+                        }
+                        
+                        currentDay++;
+                    } else {
+                        dayCell.classList.add('empty');
+                    }
+                    
+                    weekRow.appendChild(dayCell);
+                }
+                
+                calendar.appendChild(weekRow);
+                
+                if (currentDay > daysInMonth) break;
+            }
+        }
+
+        function slugify(text) {
+            return text
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '') || 'agenda';
+        }
+    </script>
+</body>
+</html>
+

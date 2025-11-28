@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a192f">
+    <title>Administration - OptiTime</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" title="Changer le thème">💻</button>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div id="clockLogo" class="clock-logo"></div>
+                <div class="header-text">
+                    <h1>OptiTime</h1>
+                    <p class="subtitle">Interface Administrateur</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="top-bar">
+            <span id="adminStatusBadge" class="pill badge warning">Accès réservé - Authentification requise</span>
+            <div>
+                <a href="index.html" class="btn-secondary">🏠 Retour Accueil</a>
+                <button id="btnAdminLogout" class="btn-secondary hidden">🚪 Déconnexion</button>
+            </div>
+        </div>
+
+        <section id="adminLoginSection" class="auth-gate">
+            <div class="auth-card">
+                <div id="adminStepCredentials" class="auth-step">
+                    <h2>Connexion administrateur</h2>
+                    <form id="adminCredentialsForm">
+                        <div class="form-group">
+                            <label for="adminEmail">Email</label>
+                            <input type="email" id="adminEmail" required placeholder="votre.email@optitime.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="adminPassword">Mot de passe</label>
+                            <input type="password" id="adminPassword" required placeholder="••••••••">
+                        </div>
+                        <div id="adminLoginError" class="form-error hidden"></div>
+                        <div class="form-actions form-actions--end">
+                            <button type="submit" class="btn-primary">Étape suivante</button>
+                        </div>
+                        <p class="helper-text">Après validation du mot de passe, scannez le QR code généré pour finaliser l'accès.</p>
+                    </form>
+                </div>
+
+                <div id="adminStepQr" class="auth-step hidden">
+                    <h2>Étape 2 · Scannez le QR</h2>
+                    <p class="helper-text">Ouvrez Google Authenticator (ou équivalent) et scannez le QR ci-dessous.</p>
+                    <div class="totp-qr">
+                        <canvas id="adminQrCanvas" width="220" height="220"></canvas>
+                    </div>
+                    <div class="copy-field">
+                        <input type="text" id="adminQrSecret" readonly>
+                        <button type="button" class="btn-secondary" id="copyAdminQrSecret">Copier</button>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="adminQrBack">← Modifier l'email</button>
+                        <button type="button" class="btn-primary" id="adminQrContinue">J'ai scanné</button>
+                    </div>
+                </div>
+
+                <div id="adminStepTotp" class="auth-step hidden">
+                    <h2>Étape 3 · Code Authenticator</h2>
+                    <p class="helper-text">Saisissez le code à 6 chiffres affiché dans votre application d'authentification.</p>
+                    <form id="adminTotpForm">
+                        <div class="form-group">
+                            <label for="adminTotpCode">Code TOTP</label>
+                            <input type="text" id="adminTotpCode" inputmode="numeric" autocomplete="one-time-code" required placeholder="123456" maxlength="6">
+                        </div>
+                        <div id="adminTotpError" class="form-error hidden"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="adminTotpBack">← Retour</button>
+                            <button type="submit" class="btn-primary">Débloquer l'accès</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="adminApp" class="hidden">
+            <div class="planning-banner">
+                <strong id="adminWelcome">Bienvenue</strong>
+                <span>Gérez les accès utilisateurs, les secrets TOTP et centralisez les journaux de la pointeuse.</span>
+            </div>
+
+            <div class="admin-grid">
+                <div class="admin-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Utilisateurs & accès</h3>
+                            <p>Création, activation, rotation de secrets</p>
+                        </div>
+                        <button id="btnNewUser" class="btn-primary">+ Nouvel utilisateur</button>
+                    </div>
+                    <div class="filters-row">
+                        <div class="form-group">
+                            <label for="userSearch">Rechercher</label>
+                            <input type="search" id="userSearch" placeholder="Nom ou email">
+                        </div>
+                        <div class="form-group">
+                            <label for="roleFilter">Filtrer par rôle</label>
+                            <select id="roleFilter">
+                                <option value="all">Tous</option>
+                                <option value="user">Utilisateur</option>
+                                <option value="admin">Administrateur</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="responsive-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Email</th>
+                                    <th>Rôle</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <tr>
+                                    <td colspan="5" class="no-data">Aucun utilisateur pour le moment.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <div class="card-header">
+                        <div>
+                            <h3>Journaux & export</h3>
+                            <p>Suivi global, filtres avancés, exports CSV/Excel/PDF</p>
+                        </div>
+                        <button id="btnOpenLogFile" class="btn-primary">📂 Charger log.csv</button>
+                    </div>
+                    <div class="file-status" id="adminLogStatus">Aucun fichier chargé</div>
+
+                    <div class="filters-row">
+                        <div class="form-group">
+                            <label for="logUserFilter">Utilisateur</label>
+                            <select id="logUserFilter">
+                                <option value="all">Tous</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="logActionFilter">Action</label>
+                            <select id="logActionFilter">
+                                <option value="">Toutes</option>
+                                <option value="login">Login</option>
+                                <option value="debut-shift">Début shift</option>
+                                <option value="pause">Pause</option>
+                                <option value="reprise">Reprise</option>
+                                <option value="reunion">Réunion</option>
+                                <option value="fin-shift">Fin shift</option>
+                                <option value="logout">Logout</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filters-row">
+                        <div class="form-group">
+                            <label for="logStartDate">Début</label>
+                            <input type="date" id="logStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="logEndDate">Fin</label>
+                            <input type="date" id="logEndDate">
+                        </div>
+                    </div>
+
+                    <div class="export-buttons">
+                        <button id="btnExportCsv" class="btn-secondary">⬇️ Export CSV</button>
+                        <button id="btnExportExcel" class="btn-secondary">⬇️ Export Excel</button>
+                        <button id="btnExportPdf" class="btn-secondary">⬇️ Export PDF</button>
+                    </div>
+
+                    <div class="log-preview history-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Horodatage</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody">
+                                <tr>
+                                    <td colspan="3" class="no-data">Chargez un log pour commencer.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal Gestion utilisateur -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-close="userModal">&times;</span>
+            <h2 id="userModalTitle">Nouvel utilisateur</h2>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userName">Nom complet</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Mot de passe</label>
+                    <input type="password" id="userPassword" placeholder="Laisser vide pour conserver">
+                    <small class="helper-text">Min. 8 caractères. Obligatoire lors de la création.</small>
+                </div>
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="userRole">Rôle</label>
+                        <select id="userRole">
+                            <option value="user">Utilisateur</option>
+                            <option value="admin">Administrateur</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userActive">Statut</label>
+                        <select id="userActive">
+                            <option value="true">Actif</option>
+                            <option value="false">Désactivé</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-error hidden" id="userFormError"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" data-close="userModal">Annuler</button>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal TOTP -->
+    <div id="totpModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" data-close="totpModal">&times;</span>
+            <h2>Secret TOTP</h2>
+            <div class="totp-box" id="totpCodePreview">000000</div>
+            <div class="totp-qr">
+                <canvas id="totpQrCanvas" width="220" height="220"></canvas>
+                <p class="helper-text">Scannez ce QR avec Google Authenticator ou Microsoft Authenticator.</p>
+            </div>
+            <div class="copy-field">
+                <input type="text" id="totpSecretField" readonly>
+                <button class="btn-secondary" id="copySecretBtn">Copier</button>
+            </div>
+            <div class="copy-field">
+                <input type="text" id="totpUriField" readonly>
+                <button class="btn-secondary" id="copyUriBtn">Copier URI</button>
+            </div>
+            <div class="form-actions">
+                <button id="resetTotpBtn" class="btn-tertiary">♻️ Générer un nouveau secret</button>
+                <button type="button" class="btn-secondary" data-close="totpModal">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminToast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="theme.js"></script>
+    <script src="clock.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-VzJ0sL5Gt+YkVfoCEN0z7LxyzKDn5XxhxL7sRKqzZo4PMBVXgS5aXoaZySUdkGFUTkOcJCIZy9FHn5iqf3s0NQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
+
